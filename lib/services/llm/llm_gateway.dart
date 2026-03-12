@@ -85,4 +85,34 @@ class LlmGateway {
     }
     return apiKey.trim();
   }
+
+  /// Validates the selected chat provider's API key by making a lightweight
+  /// network call.  Returns `null` on success, or a human-readable error
+  /// message when the key is missing or rejected (HTTP 401 / 403).
+  ///
+  /// Non-authentication network errors are silently ignored so that a
+  /// temporary connectivity issue does not block the user from opening chat.
+  Future<String?> validateChatApiKey(AppSettings settings) async {
+    final provider = settings.selectedChatProvider;
+    final config = settings.configFor(provider);
+    if (!config.isEnabled) {
+      return '${provider.displayName} is disabled in settings.';
+    }
+    try {
+      final apiKey = await _requireApiKey(provider);
+      final client = _clientFactory.create(provider);
+      await client.validateApiKey(apiKey);
+      return null;
+    } on StateError catch (e) {
+      return e.message;
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      if (status == 401 || status == 403) {
+        return 'The ${provider.displayName} API key was rejected (HTTP $status). '
+            'Please check your key in Settings.';
+      }
+      // Network / server outage – don't block chat.
+      return null;
+    }
+  }
 }

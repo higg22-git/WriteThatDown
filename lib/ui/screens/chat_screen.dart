@@ -8,10 +8,12 @@ import '../widgets/session_banner.dart';
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({
     required this.onOpenVoice,
+    required this.onOpenSettings,
     super.key,
   });
 
   final VoidCallback onOpenVoice;
+  final VoidCallback onOpenSettings;
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -26,6 +28,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.initState();
     _textController = TextEditingController();
     _scrollController = ScrollController();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _validateApiKey());
   }
 
   @override
@@ -33,6 +36,33 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _validateApiKey() async {
+    if (!mounted) return;
+    final settings = ref.read(settingsControllerProvider).settings;
+    final error = await ref.read(llmGatewayProvider).validateChatApiKey(settings);
+    if (!mounted || error == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('API Key Error'),
+        content: Text(error),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Dismiss'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              widget.onOpenSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _sendMessage() async {
