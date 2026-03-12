@@ -179,7 +179,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _keyError = null;
     });
 
-    final config = ProviderConfig.defaults(_selectedProvider).copyWith(isEnabled: true);
+    // Verify the key with a real API call before saving.
+    final verifyError = await ref.read(llmGatewayProvider).testConnection(
+          _selectedProvider,
+          key,
+        );
+
+    if (!mounted) return;
+
+    if (verifyError != null) {
+      setState(() {
+        _isSaving = false;
+        _keyError = verifyError;
+      });
+      return;
+    }
+
+    final config = ProviderConfig.defaults(_selectedProvider).copyWith(
+      isEnabled: true,
+      isVerified: true,
+    );
 
     await ref.read(settingsControllerProvider).saveAll(
           selectedChatProvider: _selectedProvider,
@@ -850,7 +869,7 @@ class _PasteKeyPage extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           _PrimaryButton(
-            label: isSaving ? 'Saving…' : 'Start using Write That Down',
+            label: isSaving ? 'Verifying API key…' : 'Start using Write That Down',
             onPressed: isSaving ? null : onFinish,
             loading: isSaving,
           ),

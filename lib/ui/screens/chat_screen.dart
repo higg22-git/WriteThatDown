@@ -117,49 +117,49 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final chat = ref.watch(chatControllerProvider);
     final ideaCapture = ref.watch(ideaCaptureControllerProvider);
+    final settingsController = ref.watch(settingsControllerProvider);
     final messages = chat.messages;
+
+    // Gate: require a verified + enabled AI provider before showing chat.
+    if (!settingsController.hasAnyVerifiedProvider) {
+      return SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off_outlined, size: 64, color: Colors.grey),
+                const SizedBox(height: 20),
+                Text(
+                  'No AI provider connected',
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Add and verify an API key in Settings to start chatting.',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: widget.onOpenSettings,
+                  icon: const Icon(Icons.tune),
+                  label: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDF8EE),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFD7C7A9)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Home chat',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Text-first chat with manual idea capture and swipe access to voice mode.',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  FilledButton.tonalIcon(
-                    onPressed: widget.onOpenVoice,
-                    icon: const Icon(Icons.mic_none),
-                    label: const Text('Voice'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
             if (chat.activeIdeaTitle != null)
               SessionBanner(
                 title: 'Seeded from ${chat.activeIdeaTitle}',

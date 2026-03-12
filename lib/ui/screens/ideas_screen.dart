@@ -23,27 +23,6 @@ class IdeasScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFCF7ED),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFD7C7A9)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Idea tiles', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Every saved idea stays local on-device. Tap a tile to jump straight into a fresh voice session seeded by its summary.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
             Expanded(
               child: Builder(
                 builder: (context) {

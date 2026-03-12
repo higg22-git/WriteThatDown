@@ -18,6 +18,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late Map<ProviderType, String> _pendingApiKeys;
   late ProviderType _selectedChatProvider;
   late ProviderType _selectedExtractionProvider;
+  bool _isSaving = false;
+  String? _saveError;
 
   @override
   Widget build(BuildContext context) {
@@ -117,6 +119,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   style: Theme.of(context).textTheme.titleLarge,
                                 ),
                               ),
+                              if (settingsController.hasApiKeys[provider] == true)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: _providerConfigs[provider]?.isVerified == true
+                                      ? const Tooltip(
+                                          message: 'API key verified and connected',
+                                          child: Icon(
+                                            Icons.verified_rounded,
+                                            color: Color(0xFF2E7D32),
+                                            size: 20,
+                                          ),
+                                        )
+                                      : const Tooltip(
+                                          message: 'Key saved but not yet verified',
+                                          child: Icon(
+                                            Icons.warning_amber_rounded,
+                                            color: Color(0xFFF57C00),
+                                            size: 20,
+                                          ),
+                                        ),
+                                ),
                               Switch(
                                 value: _providerConfigs[provider]?.isEnabled ?? false,
                                 onChanged: (value) {
@@ -131,7 +154,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           const SizedBox(height: 8),
                           Text(
                             settingsController.hasApiKeys[provider] == true
-                                ? 'A secure API key is already stored for this provider. Enter a new one only if you want to replace it.'
+                                ? _providerConfigs[provider]?.isVerified == true
+                                    ? 'Connected and verified. Enter a new key below only if you want to replace it.'
+                                    : 'Key saved but not verified. Enter a new key and save to verify it.'
                                 : 'No API key saved yet.',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
@@ -193,6 +218,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                 ),
+              if (_saveError != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEDED),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE57373)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded,
+                            color: Colors.redAccent, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _saveError!,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: Colors.redAccent),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               if (settingsController.error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -204,9 +257,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: settingsController.isSaving
+                  onPressed: _isSaving || settingsController.isSaving
                       ? null
                       : () async {
+                          setState(() {
+                            _isSaving = true;
+                            _saveError = null;
+                          });
+
+                          // Verify any newly entered API keys before saving.
+                          final gateway = ref.read(llmGatewayProvider);
+                          for (final entry in _pendingApiKeys.entries) {
+                            final newKey = entry.value.trim();
+                            if (newKey.isEmpty) continue;
+                            final verifyError = await gateway.testConnection(
+                              entry.key,
+                              newKey,
+                            );
+                            if (!mounted) return;
+                            if (verifyError != null) {
+                              setState(() {
+                                _isSaving = false;
+                                _saveError =
+                                    '${entry.key.displayName}: $verifyError';
+                                // Clear the verified flag for this provider since key changed.
+                                _providerConfigs[entry.key] =
+                                    (_providerConfigs[entry.key] ??
+                                            ProviderConfig.defaults(entry.key))
+                                        .copyWith(isVerified: false);
+                              });
+                              return;
+                            }
+                            // Mark as verified since the test passed.
+                            _providerConfigs[entry.key] =
+                                (_providerConfigs[entry.key] ??
+                                        ProviderConfig.defaults(entry.key))
+                                    .copyWith(isVerified: true);
+                          }
+
                           final configsToSave = Map<ProviderType, ProviderConfig>.from(_providerConfigs);
                           configsToSave[_selectedChatProvider] =
                               (configsToSave[_selectedChatProvider] ?? ProviderConfig.defaults(_selectedChatProvider))
@@ -221,21 +309,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 providerConfigs: configsToSave,
                                 pendingApiKeys: _pendingApiKeys,
                               );
-                          if (!mounted) {
-                            return;
-                          }
+                          if (!mounted) return;
+                          setState(() => _isSaving = false);
                           if (ref.read(settingsControllerProvider).error == null) {
                             Navigator.of(context).pop();
                           }
                         },
-                  child: settingsController.isSaving
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                  child: _isSaving || settingsController.isSaving
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Text('Verifying and saving…'),
+                          ],
                         )
                       : const Text('Save settings'),
                 ),
