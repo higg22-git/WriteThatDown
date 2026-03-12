@@ -101,7 +101,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           onPageChanged: (index) => setState(() => _currentIndex = index),
           children: [
             IdeasScreen(onStartVoiceFromIdea: _startVoiceFromIdea),
-            ChatScreen(onOpenVoice: () => _moveToPage(2)),
+            ChatScreen(onOpenVoice: () => _moveToPage(2), onOpenSettings: _openSettings),
             const VoiceScreen(),
           ],
         ),

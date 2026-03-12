@@ -20,6 +20,11 @@ abstract class LlmClient {
     required String model,
     required List<ChatMessage> conversation,
   });
+
+  /// Performs a lightweight check to confirm [apiKey] is accepted by the
+  /// provider.  Throws a [DioException] with status 401 or 403 when the key is
+  /// rejected; throws any other [DioException] for network/server errors.
+  Future<void> validateApiKey(String apiKey);
 }
 
 abstract class BaseLlmClient implements LlmClient {
@@ -166,6 +171,14 @@ class OpenAiClient extends BaseLlmClient {
   OpenAiClient(super.dio);
 
   @override
+  Future<void> validateApiKey(String apiKey) async {
+    await dio.get<dynamic>(
+      'https://api.openai.com/v1/models',
+      options: Options(headers: {'Authorization': 'Bearer $apiKey'}),
+    );
+  }
+
+  @override
   Future<String> rawComplete({
     required String apiKey,
     required String model,
@@ -205,6 +218,14 @@ class GroqClient extends BaseLlmClient {
   GroqClient(super.dio);
 
   @override
+  Future<void> validateApiKey(String apiKey) async {
+    await dio.get<dynamic>(
+      'https://api.groq.com/openai/v1/models',
+      options: Options(headers: {'Authorization': 'Bearer $apiKey'}),
+    );
+  }
+
+  @override
   Future<String> rawComplete({
     required String apiKey,
     required String model,
@@ -242,6 +263,28 @@ class GroqClient extends BaseLlmClient {
 
 class AnthropicClient extends BaseLlmClient {
   AnthropicClient(super.dio);
+
+  @override
+  Future<void> validateApiKey(String apiKey) async {
+    // Anthropic has no free metadata endpoint; use a minimal 1-token completion
+    // as a lightweight auth probe.
+    await dio.post<dynamic>(
+      'https://api.anthropic.com/v1/messages',
+      options: Options(
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+      ),
+      data: {
+        'model': ProviderType.anthropic.defaultChatModel,
+        'max_tokens': 1,
+        'messages': [
+          {'role': 'user', 'content': '1'},
+        ],
+      },
+    );
+  }
 
   @override
   Future<String> rawComplete({
@@ -288,6 +331,14 @@ class AnthropicClient extends BaseLlmClient {
 
 class GoogleAiStudioClient extends BaseLlmClient {
   GoogleAiStudioClient(super.dio);
+
+  @override
+  Future<void> validateApiKey(String apiKey) async {
+    await dio.get<dynamic>(
+      'https://generativelanguage.googleapis.com/v1beta/models',
+      queryParameters: {'key': apiKey},
+    );
+  }
 
   @override
   Future<String> rawComplete({
