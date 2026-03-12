@@ -48,7 +48,7 @@ class MessageBubble extends StatelessWidget {
               Text(
                 DateFormat.jm().format(message.createdAt),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: textColor.withOpacity(0.78),
+                      color: textColor.withValues(alpha: 0.78),
                     ),
               ),
             ],

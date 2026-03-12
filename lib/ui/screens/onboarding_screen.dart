@@ -484,7 +484,7 @@ class _ProviderOptionCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFC9A227).withOpacity(0.18),
+                            color: const Color(0xFFC9A227).withValues(alpha: 0.18),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -955,7 +955,7 @@ class _FeatureRow extends StatelessWidget {
           height: 44,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: const Color(0xFF174C4F).withOpacity(0.1),
+            color: const Color(0xFF174C4F).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: const Color(0xFF174C4F), size: 22),
