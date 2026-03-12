@@ -53,7 +53,7 @@ class IdeaCaptureController extends ChangeNotifier {
         summary: result.summary.trim(),
         tags: result.tags,
         triggerType: triggerType,
-        providerId: execution.providerType.id,
+        providerId: execution.providerType.name,
         modelId: execution.model,
         seedPrompt: result.seedPrompt.trim(),
         sourceExcerpt: result.sourceExcerpt.trim(),
