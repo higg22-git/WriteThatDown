@@ -18,7 +18,8 @@ class ExtractionResult {
       title: json['title'] as String? ?? 'Untitled idea',
       summary: json['summary'] as String? ?? '',
       tags: (json['tags'] as List<dynamic>? ?? const [])
-          .map((tag) => tag.toString().trim())
+          .whereType<String>()
+          .map((tag) => tag.trim())
           .where((tag) => tag.isNotEmpty)
           .take(5)
           .toList(),

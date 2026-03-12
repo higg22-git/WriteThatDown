@@ -79,6 +79,9 @@ abstract class BaseLlmClient implements LlmClient {
       temperature: 0.2,
     );
 
+    if (response.trim().isEmpty) {
+      throw const FormatException('Provider returned an empty response.');
+    }
     final jsonMap = JsonObjectParser.parse(response);
     return ExtractionResult.fromJson(jsonMap);
   }
@@ -134,6 +137,9 @@ Keep tags to 2-5 items.
 class JsonObjectParser {
   static Map<String, dynamic> parse(String raw) {
     final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      throw const FormatException('Provider returned an empty response.');
+    }
     try {
       return jsonDecode(trimmed) as Map<String, dynamic>;
     } catch (_) {
@@ -143,7 +149,11 @@ class JsonObjectParser {
         throw const FormatException('Provider did not return valid JSON.');
       }
       final candidate = trimmed.substring(start, end + 1);
-      return jsonDecode(candidate) as Map<String, dynamic>;
+      try {
+        return jsonDecode(candidate) as Map<String, dynamic>;
+      } catch (_) {
+        throw const FormatException('Provider did not return valid JSON.');
+      }
     }
   }
 }

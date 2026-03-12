@@ -107,7 +107,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          idea == null ? 'Could not save idea.' : 'Saved idea: ${idea.title}',
+          idea == null
+              ? 'Could not save idea: ${ref.read(ideaCaptureControllerProvider).error ?? 'Unknown error'}'
+              : 'Saved idea: ${idea.title}',
         ),
       ),
     );
