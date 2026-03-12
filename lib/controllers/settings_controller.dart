@@ -29,9 +29,34 @@ class SettingsController extends ChangeNotifier {
   bool get hasAnyConfiguredProvider =>
       _hasApiKeys.values.any((hasKey) => hasKey);
 
+  /// Returns true if at least one enabled provider has a verified API key.
+  bool get hasAnyVerifiedProvider =>
+      _settings.providerConfigs.values.any((c) => c.isEnabled && c.isVerified);
+
   Future<void> initialize() async {
     _settings = await _settingsRepository.load();
     await _refreshKeyPresence();
+
+    // Backward compatibility: treat any already-stored API key as pre-verified
+    // so existing users are not suddenly blocked after an app update.
+    // New keys added through onboarding or settings go through the live
+    // verification flow before they are saved with isVerified = true.
+    var needsSave = false;
+    final updatedConfigs = Map<ProviderType, ProviderConfig>.from(_settings.providerConfigs);
+    for (final provider in ProviderType.values) {
+      if (_hasApiKeys[provider] == true &&
+          !(updatedConfigs[provider]?.isVerified ?? false)) {
+        updatedConfigs[provider] =
+            (updatedConfigs[provider] ?? ProviderConfig.defaults(provider))
+                .copyWith(isVerified: true);
+        needsSave = true;
+      }
+    }
+    if (needsSave) {
+      _settings = _settings.copyWith(providerConfigs: updatedConfigs);
+      await _settingsRepository.save(_settings);
+    }
+
     _isInitialized = true;
     notifyListeners();
   }

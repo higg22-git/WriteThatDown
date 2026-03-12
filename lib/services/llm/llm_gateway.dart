@@ -96,7 +96,8 @@ class LlmGateway {
     final provider = settings.selectedChatProvider;
     final config = settings.configFor(provider);
     if (!config.isEnabled) {
-      return '${provider.displayName} is disabled in settings.';
+      return '${provider.displayName} is disabled in settings. '
+          'Please enable it or choose a different provider.';
     }
     try {
       final apiKey = await _requireApiKey(provider);
@@ -104,7 +105,7 @@ class LlmGateway {
       await client.validateApiKey(apiKey);
       return null;
     } on StateError catch (e) {
-      return e.message;
+      return '${e.message} Open Settings to add one.';
     } on DioException catch (e) {
       final status = e.response?.statusCode;
       if (status == 401 || status == 403) {
@@ -113,6 +114,35 @@ class LlmGateway {
       }
       // Network / server outage – don't block chat.
       return null;
+    }
+  }
+
+  /// Tests an API key for the given provider with a real network call.
+  /// Returns `null` on success, or a descriptive error message on failure.
+  /// Use this during setup to verify connectivity before saving the key.
+  Future<String?> testConnection(ProviderType provider, String apiKey) async {
+    try {
+      final client = _clientFactory.create(provider);
+      await client.validateApiKey(apiKey);
+      return null;
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      if (status == 401 || status == 403) {
+        return 'The ${provider.displayName} API key was rejected (HTTP $status). '
+            'Double-check you copied the full key correctly.';
+      }
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        return 'Connection to ${provider.displayName} timed out. '
+            'Check your internet connection and try again.';
+      }
+      final detail = e.response?.data?.toString() ?? e.message ?? 'network error';
+      return 'Could not reach ${provider.displayName}: $detail. '
+          'Check your internet connection and try again.';
+    } catch (_) {
+      return 'An unexpected error occurred while verifying ${provider.displayName}. '
+          'Please try again.';
     }
   }
 }

@@ -6,6 +6,7 @@ class ProviderConfig {
     required this.isEnabled,
     required this.chatModel,
     required this.extractionModel,
+    this.isVerified = false,
   });
 
   final ProviderType type;
@@ -13,16 +14,21 @@ class ProviderConfig {
   final String chatModel;
   final String extractionModel;
 
+  /// Whether the API key was successfully verified with a real network call.
+  final bool isVerified;
+
   ProviderConfig copyWith({
     bool? isEnabled,
     String? chatModel,
     String? extractionModel,
+    bool? isVerified,
   }) {
     return ProviderConfig(
       type: type,
       isEnabled: isEnabled ?? this.isEnabled,
       chatModel: chatModel ?? this.chatModel,
       extractionModel: extractionModel ?? this.extractionModel,
+      isVerified: isVerified ?? this.isVerified,
     );
   }
 
@@ -32,6 +38,7 @@ class ProviderConfig {
       'isEnabled': isEnabled,
       'chatModel': chatModel,
       'extractionModel': extractionModel,
+      'isVerified': isVerified,
     };
   }
 
@@ -43,6 +50,7 @@ class ProviderConfig {
       chatModel: json['chatModel'] as String? ?? type.defaultChatModel,
       extractionModel:
           json['extractionModel'] as String? ?? type.defaultExtractionModel,
+      isVerified: json['isVerified'] as bool? ?? false,
     );
   }
 

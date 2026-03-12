@@ -61,20 +61,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(_titles[_currentIndex]),
-            Text(
-              _currentIndex == 0
-                  ? 'Swipe right for chat'
-                  : _currentIndex == 1
-                      ? 'Swipe left for ideas, right for voice'
-                      : 'Swipe left for chat',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
+        title: Text(_titles[_currentIndex]),
         actions: [
           if (_currentIndex != 0 &&
               (chatController.messages.isNotEmpty || chatController.seedPrompt != null))

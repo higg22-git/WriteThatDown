@@ -5,6 +5,7 @@ import '../../providers.dart';
 import '../../controllers/voice_controller.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/session_banner.dart';
+import 'settings_screen.dart';
 
 class VoiceScreen extends ConsumerWidget {
   const VoiceScreen({super.key});
@@ -34,34 +35,56 @@ class VoiceScreen extends ConsumerWidget {
     final voice = ref.watch(voiceControllerProvider);
     final chat = ref.watch(chatControllerProvider);
     final ideaCapture = ref.watch(ideaCaptureControllerProvider);
+    final settingsController = ref.watch(settingsControllerProvider);
     final recentMessages = chat.messages.reversed.take(4).toList().reversed.toList();
+
+    // Gate: require a verified + enabled AI provider before showing voice mode.
+    if (!settingsController.hasAnyVerifiedProvider) {
+      return SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.mic_off_outlined, size: 64, color: Colors.grey),
+                const SizedBox(height: 20),
+                Text(
+                  'No AI provider connected',
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Add and verify an API key in Settings to use voice mode.',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () async {
+                    await showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      showDragHandle: true,
+                      builder: (_) => const SettingsScreen(),
+                    );
+                  },
+                  icon: const Icon(Icons.tune),
+                  label: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDF8EE),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFD7C7A9)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Voice mode', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Turn-based voice chat using on-device speech and TTS. Say "write that down" to save the latest idea in the background.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
             if (chat.activeIdeaTitle != null)
               SessionBanner(
                 title: 'Talking about ${chat.activeIdeaTitle}',
